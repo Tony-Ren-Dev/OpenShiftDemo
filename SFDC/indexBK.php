@@ -16,7 +16,7 @@ define('CONSUMER_KEY', '3MVG9MHOv_bskkhTbcpwNojvxOS.I1etdoehrB063cFNxE6hyjgic0kN
 define('CONSUMER_SECRET', '655808579299626372');
 define('REDIRECT_URI', 'https://tony-renhk.rhcloud.com/SFDC/index2.php');
 
-define('LOGIN_BASE_URL', 'https://test.salesforce.com');
+define('LOGIN_BASE_URL', 'https://test.salesforce.com/');
 
 // This example uses PHP sessions to save the authorization tokens. If you plan on
 // deploying across multiple machines behind a load-balancer, be aware you'll need
@@ -24,23 +24,31 @@ define('LOGIN_BASE_URL', 'https://test.salesforce.com');
 session_start();
 
 $is_authorized = isset($_SESSION['access_token']);
-echo $is_authorized;
+
 // If we aren't yet authorized, so either we need to send the user to the login page
 // or they've just logged in and Salesforce is giving us the tokens we need
 if (!$is_authorized)
 {
-
     $has_code = isset($_REQUEST['code']);
 
     // We haven't been given a code, so this must be the user's first visit to the
-    // page, so we'll send them to the Salesforce login screen for our app
+    // page, so we'll send them to the Salesforce login screen for our app  .'&redirect_uri='.urlencode(REDIRECT_URI)   .'/services/oauth2/token?'   .'/services/oauth2/authorize?response_type=code'
     if (!$has_code)
     {
         $auth_url = LOGIN_BASE_URL
-            .'/services/oauth2/authorize?response_type=code'
-            .'&client_id='.CONSUMER_KEY 
-            .'&redirect_uri='.urlencode(REDIRECT_URI);
+            .'services/oauth2/authorize?response_type=code'
+            .'&client_id='.CONSUMER_KEY
+			.'&redirect_uri='.REDIRECT_URI
+			.'&state=mystate';
+			//.'&client_secret='.CONSUMER_SECRET;
+			//.'&grant_type=authorization_code'
+			//.'&username=tony.ren@elufasys.com.asisb6conf'
+			//.'&password=Passw0rd4';
             
+			//https://test.salesforce.com/services/oauth2/authorize?response_type=code
+//&client_id=3MVG9MHOv_bskkhTbcpwNojvxOS.I1etdoehrB063cFNxE6hyjgic0kNHFI.kLaJdQEYn5ZuoKBwtvmT2xzgH&redirect_uri=https://tony-renhk.rhcloud.com/SFDC/index2.php&state=mystate
+			
+			
         // Redirect to the authorization page
         header('Location: '.$auth_url);
         
@@ -108,7 +116,7 @@ error_log("access_token: '$access_token'");
 $query_url = $instance_url.'/services/data/v20.0/query';
 
 // Now append the actual query we want to run
-$query_url .= '?q='.urlencode('SELECT Name, Id from Account LIMIT 400');
+$query_url .= '?q='.urlencode('SELECT Name, Id from Account');
 
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $query_url);
@@ -124,9 +132,7 @@ $query_response_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 if (($query_response_code<200)||($query_response_code>=300)||empty($query_request_body))
 {
     unset($_SESSION['access_token']);
-    unset($_SESSION['instance_url']); 
-	
-	unset($_SESSION['code']);
+    unset($_SESSION['instance_url']);
     die("Query API call failed with $query_response_code: '$query_url' - '$query_request_body'");
 }
 
@@ -146,15 +152,13 @@ $records = $query_request_data['records'];
 ?>
 <html>
 <head>
-<meta charset="utf-8">
+ <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 <title>PHP Sample Code for the Salesforce REST API</title>
 </head>
 <body>
 <h2>Found <?=$total_size?> records</h2>
-
 <div>
-<a href="<?php echo 'https://test.salesforce.com/services/oauth2/revoke?token='.$access_token  ?>">logout</a>
 <?php
 echo $access_token;
 foreach ($records as $record)
